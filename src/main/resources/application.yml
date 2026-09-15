@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+fixpilot:
+  github:
+    token: ${GITHUB_TOKEN:}
+    owner: ${GITHUB_OWNER:}
+    repo: ${GITHUB_REPO:}
+    api-base-url: https://api.github.com
+  groq:
+    api-key: ${GROQ_API_KEY:}
+    api-base-url: https://api.groq.com/openai/v1
+    model: ${GROQ_MODEL:llama-3.3-70b-versatile}
+  sandbox:
+    workdir: ${SANDBOX_WORKDIR:/tmp/fixpilot-sandboxes}
+    docker-image: ${SANDBOX_IMAGE:node:20-bullseye}
+    timeout-seconds: 120
+    max-fix-retries: 2
+
+logging:
+  level:
+    com.fixpilot: DEBUG
