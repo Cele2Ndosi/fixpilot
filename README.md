@@ -60,6 +60,39 @@ export SANDBOX_WORKDIR=/tmp/fixpilot-sandboxes
 export SANDBOX_IMAGE=node:20-bullseye
 ```
 
+**Windows / PowerShell:**
+```powershell
+$env:GITHUB_TOKEN = "ghp_xxx"
+$env:GITHUB_OWNER = "your-org-or-username"
+$env:GITHUB_REPO = "fixpilot-demo-app"
+$env:GROQ_API_KEY = "gsk_xxx"
+$env:GROQ_MODEL = "llama-3.3-70b-versatile"
+$env:SANDBOX_WORKDIR = "$env:TEMP\fixpilot-sandboxes"
+$env:SANDBOX_IMAGE = "node:20-bullseye"
+```
+
+**Important if you're running via an IDE's "Run" button (VS Code's Java
+extension, IntelliJ, etc.) rather than a terminal:** `$env:` / `export` only
+apply to the shell session you typed them into. An IDE launcher spawns the
+JVM as its own process and generally does **not** inherit a terminal session
+you set variables in afterward - it only sees variables that were already
+set (in Windows' persistent User/System environment variables, or in the
+IDE's own run/debug configuration) before the IDE itself started. The
+reliable fix for local testing is to set the variables in the same terminal
+and then launch from that terminal too:
+
+```powershell
+$env:GITHUB_TOKEN = "ghp_xxx"
+# ...(the rest)...
+mvn spring-boot:run
+```
+
+rather than setting them and then pressing Run in the editor. Since the app
+defaults every missing secret to an empty string instead of failing to
+start (see `application.yml`), a mismatched launch method won't show up as
+a boot error - it'll show up as a 401 on the first real GitHub/Groq call,
+which is a more confusing place to debug it.
+
 `SANDBOX_IMAGE` and the `npm ci && npm test` command baked into
 `SandboxService.runTestsInContainer` assume a Node test suite - point it at
 whatever your seeded demo app actually uses, and adjust that command if it
@@ -81,6 +114,22 @@ The app starts on `:8080`. Two endpoint groups:
   /investigations/{id}/report` - check status and pull up the evidence
   report without leaving your browser, as a demo-day backup to the live PR.
 
+## Testing
+
+Two independent layers, deliberately not overlapping:
+
+- **`mvn test`** runs `InvestigationOrchestratorTest` (pipeline branching -
+  triage gating, the retry cap, the verified/PR path - all with
+  `GitHubService`/`GroqService`/`SandboxService` mocked, so no network or
+  Docker involved) and `WebhookControllerTest` (payload filtering and
+  deserialization against GitHub's real field names, via MockMvc). Neither
+  needs `GITHUB_TOKEN` or `GROQ_API_KEY` set.
+- **The `debug` profile** (`mvn spring-boot:run -Dspring-boot.run.profiles=debug`)
+  exposes `/debug/github/*`, `/debug/groq/*`, and `/debug/sandbox/reproduce`
+  so you can exercise each live tool integration one at a time, with real
+  credentials, before trusting the full webhook-triggered pipeline. It's
+  `@Profile("debug")`-gated so it's inert (and absent) on a normal run.
+
 ## Known scope cuts (deliberate, not accidental)
 
 - **In-memory storage.** `InvestigationRepository` is a `ConcurrentHashMap`.
@@ -93,3 +142,8 @@ The app starts on `:8080`. Two endpoint groups:
 - **One AI provider, no fallback.** If Groq is rate-limited mid-demo, have a
   screen recording of a prior successful run ready (see the build guide's
   final iteration).
+- **No automated tests hit the real GitHub/Groq/Docker calls** - only the
+  debug endpoints do, manually. Mocking `RestClient` itself for
+  `GitHubService`/`GroqService` would close that gap, but for a one-week
+  build it's lower value than the orchestrator logic tests, which is where
+  the actual sequencing bugs would hide.

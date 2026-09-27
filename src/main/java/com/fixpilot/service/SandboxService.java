@@ -91,7 +91,10 @@ public class SandboxService {
             Path base = Path.of(props.getSandbox().getWorkdir());
             Files.createDirectories(base);
             Path workDir = base.resolve(investigationId);
-            String cloneUrl = "https://github.com/" + owner + "/" + repo + ".git";
+            String token = props.getGithub().getToken();
+            String cloneUrl = (token == null || token.isBlank())
+                    ? "https://github.com/" + owner + "/" + repo + ".git"
+                    : "https://" + token + "@github.com/" + owner + "/" + repo + ".git";
             runCommand(List.of("git", "clone", cloneUrl, workDir.toString()), base.toFile());
             runCommand(List.of("git", "checkout", sha), workDir.toFile());
             return workDir;
