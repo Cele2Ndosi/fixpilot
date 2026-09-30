@@ -147,3 +147,17 @@ Two independent layers, deliberately not overlapping:
   `GitHubService`/`GroqService` would close that gap, but for a one-week
   build it's lower value than the orchestrator logic tests, which is where
   the actual sequencing bugs would hide.
+
+
+
+
+
+
+
+
+![alt text](image.png)
+
+
+
+
+
