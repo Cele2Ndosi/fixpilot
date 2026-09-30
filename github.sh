@@ -1,17 +1,16 @@
-# From the red run's GitHub Actions page: the run ID is in the URL,
-# the commit sha is shown on the same page.
 $body = @{
     action = "completed"
     workflow_run = @{
-        id = "<real-run-id>"
+        id = "36492619435"
         conclusion = "failure"
-        head_sha = "<seeded-bug-sha>"
+        head_sha = "2533b36"
         head_branch = "main"
     }
     repository = @{
-        name = $env:GITHUB_REPO
-        owner = @{ login = $env:GITHUB_OWNER }
+        name = "Fixpilot-demo-app"
+        owner = @{ login = "Cele2Ndosi" }
     }
 } | ConvertTo-Json -Depth 5
 
-$response = curl.exe -X POST http://localhost:8080/webhooks/github -H "Content-Type: application/json" -d $body | ConvertFrom-Json
+$response = Invoke-RestMethod -Uri "http://localhost:8080/webhooks/github" -Method Post -Body $body -ContentType "application/json"
+$response
